@@ -278,6 +278,12 @@ func (e *encodeState) error(err error) {
 var byteSliceType = reflect.TypeOf([]byte(nil))
 
 func isEmptyValue(v reflect.Value) bool {
+	if v.Type().Comparable() && v.CanInterface() {
+		if v.Interface() == reflect.New(v.Type()).Elem().Interface() {
+			return true
+		}
+	}
+
 	switch v.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
 		return v.Len() == 0
@@ -291,6 +297,13 @@ func isEmptyValue(v reflect.Value) bool {
 		return v.Float() == 0
 	case reflect.Interface, reflect.Ptr:
 		return v.IsNil()
+	case reflect.Struct:
+		for i, j := 0, v.NumField(); i < j; i++ {
+			if !isEmptyValue(v.Field(i)) {
+				return false
+			}
+		}
+		return true
 	}
 	return false
 }
